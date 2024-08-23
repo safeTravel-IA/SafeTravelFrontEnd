@@ -11,6 +11,8 @@ class UserProvider with ChangeNotifier {
   String? _errorMessage;
   String? _latitude;
   String? _longitude;
+  String? _latitudeD;
+  String? _longitudeD;
 
   User? get user => _user;
   String? get userId => _userId;
@@ -19,14 +21,18 @@ class UserProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get latitude => _latitude;
   String? get longitude => _longitude;
+
+    String? get latitudeD => _latitudeD;
+  String? get longitudeD => _longitudeD;
   // Sign Up User
-  Future<void> signup({
+   Future<void> signup({
     required String username,
     required String password,
     required String firstName,
     required String lastName,
     required String phoneNumber,
     required String address,
+    String? profilePicturePath, // Optional profile picture path
   }) async {
     final response = await UserApiService.signup(
       username: username,
@@ -35,6 +41,7 @@ class UserProvider with ChangeNotifier {
       lastName: lastName,
       phoneNumber: phoneNumber,
       address: address,
+      profilePicturePath: profilePicturePath, // Pass the profile picture path
     );
 
     if (response.containsKey('data')) {
@@ -69,6 +76,8 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+
 
    Future<void> fetchGeolocation() async {
     final response = await UserApiService.fetchGeolocation();
@@ -116,9 +125,23 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+Future<void> fetchUserProfile() async {
+  try {
+    final response = await UserApiService.getProfile();
 
+    if (response.containsKey('data')) {
+      _user = User.fromJson(response['data']); // Assuming User.fromJson exists
+      _errorMessage = null; // Clear previous errors
+    } else if (response.containsKey('error')) {
+      _errorMessage = response['error']; // Handle error
+    }
 
-
+    notifyListeners(); // Notify listeners to update UI
+  } catch (e) {
+    _errorMessage = 'Failed to fetch user profile: ${e.toString()}';
+    notifyListeners(); // Notify listeners about the error
+  }
+}
   // Load User ID from SharedPreferences
   Future<void> loadUserIdFromSharedPreferences() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -144,4 +167,23 @@ class UserProvider with ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+   // Fetch Location Coordinates
+  Future<void> fetchLocationCoordinates(String location) async {
+    final response = await UserApiService.fetchLocationCoordinates(location);
+
+    print("Response: ${response.toString()}"); // Log the full response
+
+    if (response.containsKey('lat') && response.containsKey('lon')) {
+      _latitudeD = response['lat'];
+      _longitudeD = response['lon'];
+      _errorMessage = null;
+    } else if (response.containsKey('error')) {
+      _errorMessage = response['error'];
+    }
+
+    notifyListeners();
+  }
+
+
 }

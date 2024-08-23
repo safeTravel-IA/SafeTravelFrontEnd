@@ -54,6 +54,7 @@ dev_dependencies:
   flutter_map: ^4.0.0
   latlong2: ^0.8.1
   geolocator: ^10.1.0
+  mime: ^1.0.0   # Add this line
 
 
   # The "flutter_lints" package below contains a set of recommended lints to

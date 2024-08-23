@@ -8,6 +8,7 @@ class User {
   String lastName;
   String phoneNumber;
   String address;
+  String? profilePicture; // Optional field for profile picture
   List<String> emergencyContacts;
   Map<String, String> preferences;
   Location location;
@@ -21,6 +22,7 @@ class User {
     required this.lastName,
     required this.phoneNumber,
     required this.address,
+    this.profilePicture, // Optional parameter
     required this.emergencyContacts,
     required this.preferences,
     required this.location,
@@ -37,6 +39,7 @@ class User {
       lastName: json['lastName'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       address: json['address'] ?? '',
+      profilePicture: json['profilePicture'], // Handle null case
       emergencyContacts: List<String>.from(json['emergencyContacts'] ?? []),
       preferences: Map<String, String>.from(json['preferences'] ?? {}),
       location: Location.fromJson(json['location'] ?? {}),
@@ -54,6 +57,7 @@ class User {
       'lastName': lastName,
       'phoneNumber': phoneNumber,
       'address': address,
+      'profilePicture': profilePicture, // Include profile picture
       'emergencyContacts': emergencyContacts,
       'preferences': preferences,
       'location': location.toJson(),

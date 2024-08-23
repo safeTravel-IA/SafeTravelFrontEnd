@@ -1,8 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' as GetX;
-import 'package:provider/provider.dart';
-import 'package:safetravelfrontend/pages/login_page.dart';
-import 'package:safetravelfrontend/providers/user_provider.dart';
+import 'package:get/get.dart'; // Assuming you're using GetX for routing
+import 'package:image_picker/image_picker.dart'; // For image picking
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class SignupPage extends StatefulWidget {
   @override
@@ -19,11 +21,34 @@ class _SignupPageState extends State<SignupPage> {
 
   bool _obscureText = true;
   bool _isLoading = false;
+  File? _selectedImage; // State variable for storing the selected image
+  final ImagePicker _picker = ImagePicker(); // Image picker instance
 
   void _togglePasswordVisibility() {
     setState(() {
       _obscureText = !_obscureText;
     });
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final extension = file.path.split('.').last.toLowerCase();
+
+      // Check if the file extension is jpg, jpeg, or png
+      if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+        setState(() {
+          _selectedImage = file;
+        });
+      } else {
+        // Show an error message if the file type is not supported
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Only JPG and PNG images are accepted.')),
+        );
+      }
+    }
   }
 
   Future<void> _registerUser() async {
@@ -34,11 +59,7 @@ class _SignupPageState extends State<SignupPage> {
     final String phoneNumber = phoneNumberController.text;
     final String address = addressController.text;
 
-    // Print for debugging
-    print('Attempting to register user with username: $username and password: $password');
-
     if (username.isEmpty || password.isEmpty || firstName.isEmpty || lastName.isEmpty || phoneNumber.isEmpty || address.isEmpty) {
-      // Show some error message to the user here, such as a Snackbar
       print('Please fill in all fields.');
       return;
     }
@@ -48,20 +69,52 @@ class _SignupPageState extends State<SignupPage> {
     });
 
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final uri = Uri.parse('http://10.0.2.2:3000/api/signup'); // Update with your API endpoint
+      final request = http.MultipartRequest('POST', uri);
 
-      // Register the user with the additional details
-      await userProvider.signup(
-        username: username,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        phoneNumber: phoneNumber,
-        address: address,
-      );
+      // Add text fields
+      request.fields['username'] = username;
+      request.fields['password'] = password;
+      request.fields['firstName'] = firstName;
+      request.fields['lastName'] = lastName;
+      request.fields['phoneNumber'] = phoneNumber;
+      request.fields['address'] = address;
 
-      if (userProvider.userId?.isNotEmpty ?? false) {
-        GetX.Get.toNamed('/home');
+      // Add profile picture file if available
+      if (_selectedImage != null) {
+        final extension = _selectedImage!.path.split('.').last.toLowerCase();
+        String mediaType;
+        switch (extension) {
+          case 'jpg':
+          case 'jpeg':
+            mediaType = 'image/jpeg';
+            break;
+          case 'png':
+            mediaType = 'image/png';
+            break;
+          default:
+            mediaType = 'image/jpeg'; // Fallback type
+        }
+        request.files.add(await http.MultipartFile.fromPath(
+          'profilePicture',
+          _selectedImage!.path,
+          contentType: MediaType.parse(mediaType),
+        ));
+      }
+
+      // Send the request
+      final response = await request.send();
+
+      // Parse the response
+      final responseString = await response.stream.bytesToString();
+      final responseData = jsonDecode(responseString);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Handle successful response
+        Get.toNamed('/home');
+      } else {
+        // Handle error response
+        print('Error: ${responseData['message']}');
       }
     } catch (e) {
       print('Failed to register user: ${e.toString()}');
@@ -108,12 +161,32 @@ class _SignupPageState extends State<SignupPage> {
                       color: Color(0xFFFF6F61),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Image.asset(
-                    'assets/images/registerimage.png',
-                    width: 200,
-                    height: 200,
-                  ),
+const SizedBox(height: 20),
+Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    GestureDetector(
+      onTap: _pickImage,
+      child: CircleAvatar(
+        radius: 50,
+        backgroundImage: _selectedImage != null
+            ? FileImage(_selectedImage!)
+            : AssetImage('assets/images/registerimage.png') as ImageProvider,
+      ),
+    ),
+    const SizedBox(height: 10), // Space between the image and the icon
+    GestureDetector(
+      onTap: _pickImage,
+      child: Icon(
+        Icons.add_a_photo,
+        size: 50,
+        color: Colors.grey.shade800,
+      ),
+    ),
+  ],
+),
+
+
                   const SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -227,25 +300,13 @@ class _SignupPageState extends State<SignupPage> {
                         const SizedBox(height: 20),
                         TextButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => LoginPage()),
-                            );
+                            Get.toNamed('/login');
                           },
-                          child: Text.rich(
-                            TextSpan(
-                              text: 'Already have an account? ',
-                              style: TextStyle(color: Color(0xFF6F6E6E)),
-                              children: [
-                                TextSpan(
-                                  text: 'Sign In',
-                                  style: TextStyle(
-                                    color: Color(0xFFFF6F61),
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ],
+                          child: Text(
+                            'Already have an account? Login',
+                            style: TextStyle(
+                              color: Color(0xFFFF6F61),
+                              fontSize: 16,
                             ),
                           ),
                         ),
