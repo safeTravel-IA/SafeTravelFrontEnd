@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
   // You can add your actual pages here when you're ready
   final List<Widget> _pages = [
     MapScreen(),
-    Placeholder(), // Add your second page here
+    Placeholder(), // Add your third page here
     Placeholder(), // Add your third page here
   ];
 

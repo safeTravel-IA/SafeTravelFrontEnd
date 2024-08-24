@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'dart:convert'; // For jsonDecode and base64Decode
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:safetravelfrontend/services/user_apiservice.dart';
 import 'package:safetravelfrontend/model/user_model.dart';
+import 'package:http/http.dart' as http; // For HTTP requests
+import 'package:path_provider/path_provider.dart'; // For getTemporaryDirectory
 
 class UserProvider with ChangeNotifier {
   User? _user;
@@ -13,6 +17,9 @@ class UserProvider with ChangeNotifier {
   String? _longitude;
   String? _latitudeD;
   String? _longitudeD;
+    List<dynamic> _images = [];
+  List<dynamic> get images => _images;
+
 
   User? get user => _user;
   String? get userId => _userId;
@@ -184,6 +191,54 @@ Future<void> fetchUserProfile() async {
 
     notifyListeners();
   }
+
+Future<void> fetchImages(String query) async {
+  _images = [];
+  _errorMessage = null;
+
+  final response = await UserApiService.fetchImages(query);
+
+  if (response.containsKey('rawUrls') && response.containsKey('fullUrls')) {
+    List<String> rawUrls = List<String>.from(response['rawUrls']);
+    List<String> fullUrls = List<String>.from(response['fullUrls']);
+
+    // Combine raw and full URLs into a list of maps
+    _images = rawUrls.map((url) => {'url': url, 'type': 'raw'}).toList()
+        ..addAll(fullUrls.map((url) => {'url': url, 'type': 'full'}).toList());
+  } else if (response.containsKey('error')) {
+    _errorMessage = response['error'];
+  }
+
+  notifyListeners();
+}
+
+
+ Future<void> fetchUserImages(String urls) async {
+  try {
+    final response = await UserApiService.fetchUserImages(urls); // Ensure this returns http.Response
+
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      if (result.containsKey('images')) {
+        _images = result['images'].map((img) => {
+          'url': img['url'],
+          'base64': img['base64Image'],
+        }).toList();
+        notifyListeners();
+      } else {
+        _errorMessage = result['error'] ?? 'No images found';
+        notifyListeners();
+      }
+    } else {
+      _errorMessage = 'Error fetching images: ${response.reasonPhrase}';
+      notifyListeners();
+    }
+  } catch (e) {
+    _errorMessage = 'Error: $e';
+    notifyListeners();
+  }
+}
+
 
 
 }

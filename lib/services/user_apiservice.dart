@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mime/mime.dart';
+import 'package:path_provider/path_provider.dart';
 
 class UserApiService {
   static const String baseUrl = "http://10.0.2.2:3000/api";
@@ -165,5 +166,47 @@ static Future<Map<String, dynamic>> fetchLocationCoordinates(String location) as
     } catch (e) {
       return {'error': e.toString()};
     }
+  }
+
+  // Fetch Images from Unsplash
+static Future<Map<String, dynamic>> fetchImages(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/about/images/$query'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      final result = _handleResponse(response);
+
+      // Process and return image URLs
+      if (result.containsKey('images')) {
+        List<dynamic> images = result['images'];
+        List<String> rawUrls = [];
+        List<String> fullUrls = [];
+
+        for (var image in images) {
+          if (image['raw'] != null) {
+            rawUrls.add(image['raw']);
+          }
+          if (image['full'] != null) {
+            fullUrls.add(image['full']);
+          }
+        }
+
+        return {
+          'rawUrls': rawUrls,
+          'fullUrls': fullUrls,
+        };
+      } else {
+        return {'error': result['error']};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+static Future<http.Response> fetchUserImages(String urls) async {
+    final url = Uri.parse('$baseUrl/user/images?urls=$urls');
+    return await http.get(url);
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
@@ -31,6 +32,11 @@ class _MapScreenState extends State<MapScreen> {
       Provider.of<UserProvider>(context, listen: false).fetchUserProfile();
     });
   }
+
+
+
+
+
 
   Future<void> _loadLocation() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -209,6 +215,26 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
+  void _showErrorDialog(BuildContext context, String errorMessage) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Error'),
+        content: Text(errorMessage),
+        actions: [
+          TextButton(
+            child: Text('Close'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +274,10 @@ class _MapScreenState extends State<MapScreen> {
                       );
                     },
                   ),
+                  
                 ),
+
+        
                 SizedBox(width: 8), // Add spacing between icons
                 Flexible(
                   child: IconButton(

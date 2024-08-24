@@ -55,6 +55,7 @@ dev_dependencies:
   latlong2: ^0.8.1
   geolocator: ^10.1.0
   mime: ^1.0.0   # Add this line
+  path_provider: ^2.0.8
 
 
   # The "flutter_lints" package below contains a set of recommended lints to
