@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:safetravelfrontend/pages/destinations_list.dart';
 import 'package:safetravelfrontend/pages/top_appbar.dart';
 import 'package:safetravelfrontend/providers/user_provider.dart';
 import 'package:geolocator/geolocator.dart';
@@ -151,38 +152,66 @@ class _MapScreenState extends State<MapScreen> {
 
   }
 
-  Future<void> _logout(BuildContext context) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    Navigator.pushReplacementNamed(context, '/signin');
-  }
 
-  void _showLogoutConfirmationDialog(BuildContext context) {
+  void _showWeatherAlertsDialog(BuildContext context) async {
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+  // Assuming destination is set using a TextEditingController named _destinationController
+  final destination = _destinationController.text;
+
+  if (destination.isEmpty) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Logout'),
-          content: Text('Are you sure you want to logout?'),
+          title: Text('Error'),
+          content: Text('Please enter a valid destination.'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('No'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _logout(context);
-              },
-              child: Text('Yes'),
+              child: Text('Close'),
             ),
           ],
         );
       },
     );
+    return;
   }
+
+  // Fetch weather alerts based on the destination
+  await userProvider.fetchWeatherAlerts(destination);
+
+  final alerts = userProvider.weatherAlerts;
+  final error = userProvider.error;
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Weather Alerts'),
+        content: error != null
+            ? Text('Error: $error')
+            : alerts != null && alerts.isNotEmpty
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: alerts.map((alert) => ListTile(title: Text(alert))).toList(),
+                  )
+                : Text('No weather alerts available.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   void _showUserProfileDialog(BuildContext context, String imageUrl, String username, String address) {
     showDialog(
@@ -247,12 +276,7 @@ class _MapScreenState extends State<MapScreen> {
         : 'assets/images/girl.png';
 
     return Scaffold(
-      appBar: TopAppBar(
-        title: 'Map Screen',
-        onLogout: () {
-          _showLogoutConfirmationDialog(context);
-        },
-      ),
+
       body: Column(
         children: [
           // Profile and Notification Icons Row
@@ -276,7 +300,22 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   
                 ),
-
+                SizedBox(width: 8),
+                  Flexible(
+                  child: IconButton(
+                    icon: Image.asset('assets/images/destination.png'),
+                    iconSize: 16, // Adjusted to 16
+                    onPressed: () {
+                    Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DestinationsList(),
+                    ),
+                      );
+                    },
+                  ),
+                  
+                ),
         
                 SizedBox(width: 8), // Add spacing between icons
                 Flexible(
@@ -284,6 +323,7 @@ class _MapScreenState extends State<MapScreen> {
                     icon: Image.asset('assets/images/alert.png'),
                     iconSize: 16, // Adjusted to 16
                     onPressed: () {
+                    _showWeatherAlertsDialog(context);
                       // Implement notification functionality
                     },
                   ),

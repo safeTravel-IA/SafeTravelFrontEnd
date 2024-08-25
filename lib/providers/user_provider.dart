@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert'; // For jsonDecode and base64Decode
 import 'package:flutter/material.dart';
+import 'package:safetravelfrontend/model/destination_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:safetravelfrontend/services/user_apiservice.dart';
 import 'package:safetravelfrontend/model/user_model.dart';
@@ -19,7 +20,13 @@ class UserProvider with ChangeNotifier {
   String? _longitudeD;
     List<dynamic> _images = [];
   List<dynamic> get images => _images;
+    List<String>? _pollutionAlerts; // For pollution alerts
+  List<String>? _weatherAlerts; // Update to a List<String> for alerts
+  String? _error;
+    List<String>? get pollutionAlerts => _pollutionAlerts;
 
+  List<Destination> _destinations = [];
+  List<Destination> get destinations => _destinations;
 
   User? get user => _user;
   String? get userId => _userId;
@@ -28,6 +35,8 @@ class UserProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get latitude => _latitude;
   String? get longitude => _longitude;
+  List<String>? get weatherAlerts => _weatherAlerts;
+  String? get error => _error;
 
     String? get latitudeD => _latitudeD;
   String? get longitudeD => _longitudeD;
@@ -238,7 +247,75 @@ Future<void> fetchImages(String query) async {
     notifyListeners();
   }
 }
+Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) async {
+  // Reset state before making the request
+  _weatherAlerts = null;
+  _pollutionAlerts = null;
+  _error = null;
+  notifyListeners();
 
+  // Handle the API call with optional lat and lon
+  final result = await UserApiService.getWeatherAlerts(destination, lat, lon);
+
+  if (result.containsKey('error')) {
+    _error = result['error'];
+  } else {
+    // Handle the response data
+    final data = result['data'];
+
+    if (data != null && data.containsKey('message')) {
+      _weatherAlerts = List<String>.from(data['weatherAlerts']); // Extract weather alerts
+      _pollutionAlerts = List<String>.from(data['pollutionAlerts']); // Extract pollution alerts
+    } else {
+      _weatherAlerts = [];
+      _pollutionAlerts = [];
+    }
+  }
+
+  notifyListeners();
+}
+
+
+  Future<void> fetchDestinations() async {
+    try {
+      List<Destination> fetchedDestinations = await UserApiService().fetchDestinations();
+      _destinations = fetchedDestinations;
+      notifyListeners(); // Notify UI to update when data is fetched
+    } catch (error) {
+      print('Error fetching destinations: $error');
+      throw error;
+    }
+  }
+// Method to create a new planning entry
+  Future<void> createPlanning({
+    required String userId,
+    required String destinationId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await UserApiService.createPlanning(
+        userId: userId,
+        destinationId: destinationId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      if (response.containsKey('error')) {
+        // Handle the error, possibly update state or show a message
+        throw Exception(response['error']);
+      } else {
+        // If needed, update the state with the new planning data
+        final planningData = response['data'];
+        // Update your state if necessary here
+        notifyListeners(); // Notify listeners of any changes
+      }
+    } catch (e) {
+      // Handle exceptions or errors
+      print('Error creating planning: $e');
+      throw e; // Re-throw the error if needed
+    }
+  }
 
 
 }

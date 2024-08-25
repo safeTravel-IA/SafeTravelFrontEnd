@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:safetravelfrontend/pages/destinations_list.dart';
 import 'package:safetravelfrontend/pages/map_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'top_appbar.dart';
@@ -66,7 +67,6 @@ class _HomePageState extends State<HomePage> {
   // You can add your actual pages here when you're ready
   final List<Widget> _pages = [
     MapScreen(),
-    Placeholder(), // Add your third page here
     Placeholder(), // Add your third page here
   ];
 

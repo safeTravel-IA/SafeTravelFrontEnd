@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
       if (userProvider.userId != null && userProvider.userId!.isNotEmpty) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MapScreen()),
+          MaterialPageRoute(builder: (context) => HomePage()),
         );
       }
     } catch (e) {

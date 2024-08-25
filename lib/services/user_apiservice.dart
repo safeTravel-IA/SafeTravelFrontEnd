@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:safetravelfrontend/model/destination_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mime/mime.dart';
 import 'package:path_provider/path_provider.dart';
@@ -204,9 +205,75 @@ static Future<Map<String, dynamic>> fetchImages(String query) async {
       return {'error': e.toString()};
     }
   }
+// Fetch Weather Alerts by Location
+static Future<Map<String, dynamic>> getWeatherAlerts(String destination, double? lat, double? lon) async {
+  try {
+    final body = {
+      'destination': destination, // Optional
+      // Only include lat and lon if they are not null
+      if (lat != null) 'lat': lat,
+      if (lon != null) 'lon': lon
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/weather/alerts'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+
+    return _handleResponse(response);
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
 
 static Future<http.Response> fetchUserImages(String urls) async {
     final url = Uri.parse('$baseUrl/user/images?urls=$urls');
     return await http.get(url);
   }
+
+
+Future<List<Destination>> fetchDestinations() async {
+  final response = await http.get(Uri.parse('$baseUrl/destination/list'));
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['success']) {
+      List<dynamic> destinations = data['data'];
+      return destinations.map((destination) => Destination.fromJson(destination)).toList();
+    } else {
+      throw Exception('Failed to load destinations: ${data['message']}');
+    }
+  } else {
+    throw Exception('Failed to load destinations');
+  }
+}
+
+
+  // Method to create a new planning entry
+  static Future<Map<String, dynamic>> createPlanning({
+    required String userId,
+    required String destinationId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/plannings'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'destinationId': destinationId,
+          'startDate': startDate.toIso8601String(),
+          'endDate': endDate.toIso8601String(),
+          'userId': userId, // Include userId in the request body
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
 }
