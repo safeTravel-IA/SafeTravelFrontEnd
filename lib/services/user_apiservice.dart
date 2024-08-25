@@ -276,4 +276,76 @@ Future<List<Destination>> fetchDestinations() async {
     }
   }
 
+
+  // Convert Currency method
+  static Future<Map<String, dynamic>> convertCurrency({
+    required double amount,
+    required String fromCurrency,
+    required String toCurrency,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/convertion/convert?amount=$amount&from=$fromCurrency&to=$toCurrency'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      // Parse the response body
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      // Check if the response is successful
+      if (response.statusCode == 200) {
+        // Extract conversion data
+        final double convertedAmount = data['convertedAmount']?.toDouble() ?? 0.0;
+        final double rate = data['rate']?.toDouble() ?? 0.0;
+
+        return {
+          'convertedAmount': convertedAmount,
+          'rate': rate,
+        };
+      } else {
+        // Handle non-200 response
+        return {'error': 'Failed to load data'};
+      }
+    } catch (e) {
+      // Handle exceptions
+      return {'error': e.toString()};
+    }
+  }
+
+
+  static Future<Map<String, dynamic>> translateText({
+    required String text,
+    required String from,
+    required String to,
+    required String userId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/translate'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'text': text,
+          'from': from,
+          'to': to,
+          'userId': userId, // Include userId in the request body
+        }),
+      );
+
+      final Map<String, dynamic> result = {};
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Decode the response body
+        result['data'] = jsonDecode(response.body);
+      } else {
+        // Handle non-200 response
+        result['error'] = jsonDecode(response.body)['error'] ?? 'Failed to translate text';
+      }
+
+      return result;
+    } catch (e) {
+      // Handle exceptions
+      return {'error': e.toString()};
+    }
+  }
+
 }
+

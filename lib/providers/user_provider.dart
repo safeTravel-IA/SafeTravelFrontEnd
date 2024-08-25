@@ -18,13 +18,20 @@ class UserProvider with ChangeNotifier {
   String? _longitude;
   String? _latitudeD;
   String? _longitudeD;
+    // State variables
+  String? _conversionError;
+  double? _convertedAmount;
+  double? _conversionRate;
     List<dynamic> _images = [];
   List<dynamic> get images => _images;
     List<String>? _pollutionAlerts; // For pollution alerts
   List<String>? _weatherAlerts; // Update to a List<String> for alerts
   String? _error;
     List<String>? get pollutionAlerts => _pollutionAlerts;
-
+  // Getters
+  String? get conversionError => _conversionError;
+  double? get convertedAmount => _convertedAmount;
+  double? get conversionRate => _conversionRate;
   List<Destination> _destinations = [];
   List<Destination> get destinations => _destinations;
 
@@ -40,6 +47,12 @@ class UserProvider with ChangeNotifier {
 
     String? get latitudeD => _latitudeD;
   String? get longitudeD => _longitudeD;
+  String? _translationResult;
+  String? get translationResult => _translationResult;
+
+  // State variable to store errors
+  String? _translationError;
+  String? get translationError => _translationError;
   // Sign Up User
    Future<void> signup({
     required String username,
@@ -316,6 +329,86 @@ Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) 
       throw e; // Re-throw the error if needed
     }
   }
+// Convert Currency method
+// Convert Currency method
+  Future<Map<String, dynamic>> convertCurrency({
+    required double amount,
+    required String fromCurrency,
+    required String toCurrency,
+  }) async {
+    // Reset previous values
+    _conversionError = null;
+    _convertedAmount = null;
+    _conversionRate = null;
+    notifyListeners();
 
+    Map<String, dynamic> response = {};
 
+    try {
+      // Call the API service
+      final result = await UserApiService.convertCurrency(
+        amount: amount,
+        fromCurrency: fromCurrency,
+        toCurrency: toCurrency,
+      );
+
+      if (result.containsKey('error')) {
+        _conversionError = result['error'];
+        response['error'] = result['error'];
+      } else {
+        // Update state with the conversion result
+        _conversionRate = result['rate'];
+        _convertedAmount = result['convertedAmount'];
+        
+        // Add the conversion results to the response map
+        response['rate'] = _conversionRate;
+        response['convertedAmount'] = _convertedAmount;
+      }
+    } catch (e) {
+      _conversionError = e.toString();
+      response['error'] = e.toString();
+    }
+
+    // Notify listeners to update the UI
+    notifyListeners();
+
+    // Return the response with conversion data or error
+    return response;
+  }
+
+  
+  Future<void> translateText({
+    required String text,
+    required String from,
+    required String to,
+    required String userId, // Add the userId parameter here
+  }) async {
+    if (userId.isEmpty) {
+      _translationError = 'User ID is not available';
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final response = await UserApiService.translateText(
+        text: text,
+        from: from,
+        to: to,
+        userId: userId, // Pass the userId to your API service
+      );
+
+      if (response.containsKey('data')) {
+        _translationResult = response['data']['translatedText']; // Assuming 'translatedText' is returned
+        _translationError = null; // Clear any previous error
+      } else if (response.containsKey('error')) {
+        _translationError = response['error'];
+        _translationResult = null; // Clear any previous result
+      }
+    } catch (e) {
+      _translationError = 'Failed to translate text: ${e.toString()}';
+      _translationResult = null; // Clear any previous result
+    }
+
+    notifyListeners(); // Notify listeners to update the UI
+  }
 }

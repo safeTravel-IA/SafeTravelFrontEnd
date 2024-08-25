@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:safetravelfrontend/pages/currency_convertor.dart';
 import 'package:safetravelfrontend/pages/destinations_list.dart';
 import 'package:safetravelfrontend/pages/map_screen.dart';
+import 'package:safetravelfrontend/pages/translation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'top_appbar.dart';
 import 'custom_bottom_navigation_bar.dart'; // Ensure this import is correct
@@ -68,13 +70,19 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     MapScreen(),
     Placeholder(), // Add your third page here
+    Placeholder(), // Add your third page here
+    Placeholder(), // Add your third page here
+    Placeholder(), // Add your third page here
+    CurrencyConverter(),
+    TranslationScreen(),
+
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TopAppBar(
-        title: 'Home',
+        title: 'SafeTravel',
         onLogout: _showLogoutConfirmationDialog,
       ),
       body: IndexedStack(
