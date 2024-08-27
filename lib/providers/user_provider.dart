@@ -22,6 +22,8 @@ class UserProvider with ChangeNotifier {
   String? _conversionError;
   double? _convertedAmount;
   double? _conversionRate;
+  Map<String, dynamic>? _updatedPost;
+
     List<dynamic> _images = [];
   List<dynamic> get images => _images;
     List<String>? _pollutionAlerts; // For pollution alerts
@@ -34,7 +36,8 @@ class UserProvider with ChangeNotifier {
   double? get conversionRate => _conversionRate;
   List<Destination> _destinations = [];
   List<Destination> get destinations => _destinations;
-
+ Map<String, dynamic>? get updatedPost => _updatedPost;
+  String? get error => _error;
   User? get user => _user;
   String? get userId => _userId;
   String? get username => _username; // Add getter for username
@@ -43,7 +46,6 @@ class UserProvider with ChangeNotifier {
   String? get latitude => _latitude;
   String? get longitude => _longitude;
   List<String>? get weatherAlerts => _weatherAlerts;
-  String? get error => _error;
 
     String? get latitudeD => _latitudeD;
   String? get longitudeD => _longitudeD;
@@ -410,5 +412,122 @@ Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) 
     }
 
     notifyListeners(); // Notify listeners to update the UI
+  }
+
+    Future<Map<String, dynamic>> createForumPost({
+    required String userId,
+    required String destinationId,
+    required String title,
+    required String content,
+    required List<String> hashtags,
+    String? imagePath, // Optional image path
+  }) async {
+    try {
+      final result = await UserApiService.createForumPost(
+        userId: userId,
+        destinationId: destinationId,
+        title: title,
+        content: content,
+        hashtags: hashtags,
+        imagePath: imagePath,
+      );
+
+      if (result.containsKey('data')) {
+        // Post created successfully
+        notifyListeners(); // Notify listeners if needed (e.g., to update UI)
+        return result;
+      } else {
+        // Handle error
+        return {'error': result['error']};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Get All Forum Posts
+  Future<Map<String, dynamic>> getAllForumPosts() async {
+    try {
+      final result = await UserApiService.getAllForumPosts();
+
+      if (result.containsKey('data')) {
+        // Forum posts retrieved successfully
+        notifyListeners(); // Notify listeners to update UI
+        return result;
+      } else {
+        // Handle error
+        return {'error': result['error']};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Get Forum Post By ID
+  Future<Map<String, dynamic>> getForumPostById(String postId) async {
+    try {
+      final result = await UserApiService.getForumPostById(postId);
+
+      if (result.containsKey('data')) {
+        // Forum post retrieved successfully
+        notifyListeners(); // Notify listeners to update UI
+        return result;
+      } else {
+        // Handle error
+        return {'error': result['error']};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Delete Forum Post
+  Future<Map<String, dynamic>> deleteForumPost(String postId) async {
+    try {
+      final result = await UserApiService.deleteForumPost(postId);
+
+      if (result.containsKey('data')) {
+        // Forum post deleted successfully
+        notifyListeners(); // Notify listeners to update UI
+        return result;
+      } else {
+        // Handle error
+        return {'error': result['error']};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Method to update a forum post
+  // Method to update a forum post
+  Future<Map<String, dynamic>> updateForumPost({
+    required String postId,
+    required String title,
+    required String content,
+    String? imagePath,
+  }) async {
+    // Reset previous error
+    _error = null;
+    notifyListeners();
+
+    // Call the API service method
+    final result = await UserApiService.updateForumPost(
+      postId: postId,
+      title: title,
+      content: content,
+      imagePath: imagePath,
+    );
+
+    // Handle the result
+    if (result.containsKey('data')) {
+      _updatedPost = result['data'];
+      notifyListeners();
+      return {'success': true};
+    } else {
+      _error = result['error'];
+      notifyListeners();
+      return {'error': _error};
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:safetravelfrontend/pages/currency_convertor.dart';
 import 'package:safetravelfrontend/pages/destinations_list.dart';
+import 'package:safetravelfrontend/pages/forum.dart';
 import 'package:safetravelfrontend/pages/map_screen.dart';
 import 'package:safetravelfrontend/pages/translation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,7 +70,7 @@ class _HomePageState extends State<HomePage> {
   // You can add your actual pages here when you're ready
   final List<Widget> _pages = [
     MapScreen(),
-    Placeholder(), // Add your third page here
+    Forum(), // Add your third page here
     Placeholder(), // Add your third page here
     Placeholder(), // Add your third page here
     Placeholder(), // Add your third page here

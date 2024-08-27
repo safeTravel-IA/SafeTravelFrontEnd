@@ -346,6 +346,118 @@ Future<List<Destination>> fetchDestinations() async {
       return {'error': e.toString()};
     }
   }
+static Future<Map<String, dynamic>> createForumPost({
+    required String userId,
+    required String destinationId,
+    required String title,
+    required String content,
+    required List<String> hashtags,
+    String? imagePath, // Optional image path
+  }) async {
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/forum/create'));
 
+      // Add text fields
+      request.fields['userId'] = userId;
+      request.fields['destinationId'] = destinationId;
+      request.fields['title'] = title;
+      request.fields['content'] = content;
+      request.fields['hashtags'] = jsonEncode(hashtags);
+
+      // Add image if provided
+      if (imagePath != null && File(imagePath).existsSync()) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'image',
+          imagePath,
+        ));
+      }
+
+      // Send request and get the response
+      var response = await request.send();
+      final responseString = await response.stream.bytesToString();
+      final responseData = jsonDecode(responseString);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'data': responseData};
+      } else {
+        return {'error': responseData['message']};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Get All Forum Posts
+  static Future<Map<String, dynamic>> getAllForumPosts() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/forum/getA'));
+      return _handleResponse(response);
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Get Forum Post By ID
+  static Future<Map<String, dynamic>> getForumPostById(String postId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/forum/$postId'));
+      return _handleResponse(response);
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Delete Forum Post
+  static Future<Map<String, dynamic>> deleteForumPost(String postId) async {
+    try {
+      final response = await http.delete(Uri.parse('$baseUrl/forum/$postId'));
+      return _handleResponse(response);
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+    // Method to update a forum post
+  static Future<Map<String, dynamic>> updateForumPost({
+    required String postId,
+    required String title,
+    required String content,
+    String? imagePath, // Optional image path
+  }) async {
+    try {
+      // Create a multipart request
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/forum/$postId'),
+      );
+
+      // Add the text fields
+      request.fields['title'] = title;
+      request.fields['content'] = content;
+
+      // Add the image file if it's provided
+      if (imagePath != null && File(imagePath).existsSync()) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'image',
+          imagePath,
+        ));
+      }
+
+      // Send the request
+      var response = await request.send();
+
+      // Parse the response
+      final responseString = await response.stream.bytesToString();
+      final responseData = jsonDecode(responseString);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'data': responseData};
+      } else {
+        return {'error': responseData['message'] ?? 'Failed to update post'};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
 }
 
