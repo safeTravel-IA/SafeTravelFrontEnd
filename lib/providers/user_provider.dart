@@ -23,6 +23,9 @@ class UserProvider with ChangeNotifier {
   double? _convertedAmount;
   double? _conversionRate;
   Map<String, dynamic>? _updatedPost;
+  Map<String, dynamic>? _weatherNews;
+
+  Map<String, dynamic>? get weatherNews => _weatherNews;
 
     List<dynamic> _images = [];
   List<dynamic> get images => _images;
@@ -540,4 +543,32 @@ Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) 
       return {'error': _error};
     }
   }
+
+  // Method to fetch weather news from the API service
+Future<void> fetchWeatherNews(String destination, double? lat, double? lon) async {
+  try {
+    // Call the getWeatherNews method to get the weather data
+    final result = await UserApiService.getWeatherNews(destination, lat, lon);
+
+    if (result.containsKey('forecast')) {
+      // If the forecast data is available, update the state
+      _weatherNews = result;
+      _error = null;
+    } else {
+      // If there's an error in the result, update the state with the error
+      _weatherNews = null;
+      _error = result['error'];
+    }
+
+    notifyListeners(); // Notify listeners to update the UI
+  } catch (e) {
+    // Handle exceptions and update the state
+    _weatherNews = null;
+    _error = e.toString();
+    notifyListeners();
+  }
 }
+
+}
+
+

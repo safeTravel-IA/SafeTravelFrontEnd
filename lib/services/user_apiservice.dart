@@ -459,5 +459,54 @@ static Future<Map<String, dynamic>> createForumPost({
       return {'error': e.toString()};
     }
   }
+
+static Future<Map<String, dynamic>> getWeatherNews(
+    String destination, double? lat, double? lon) async {
+  try {
+    final url = Uri.parse('$baseUrl/forecast/$destination').replace(
+      queryParameters: {
+        if (lat != null) 'lat': lat.toString(),
+        if (lon != null) 'lon': lon.toString(),
+      },
+    );
+
+    final headers = {
+      'Content-Type': 'application/json',
+    };
+
+    final response = await http.get(url, headers: headers);
+
+    // Check if the response status is 200 (OK)
+    if (response.statusCode == 200) {
+      // Parse the response body as JSON
+      final Map<String, dynamic> result = json.decode(response.body);
+
+      // Check if the forecast data is present
+      if (result.containsKey('forecast')) {
+        final forecast = result['forecast'] as List<dynamic>;
+        final weatherData = forecast.map((day) {
+          return {
+            'time': day['time'] as String, // Ensure this key matches your backend data
+            'avgTempC': day['avgTempC'].toString(), // Convert avgTempC to string for UI display
+          };
+        }).toList();
+
+        return {'forecast': weatherData};
+      } else {
+        // Handle cases where forecast key is missing
+        return {'error': 'Forecast data not found'};
+      }
+    } else {
+      // Handle non-200 response status codes
+      return {
+        'error': 'Failed to fetch data. Status code: ${response.statusCode}',
+      };
+    }
+  } catch (e) {
+    // Handle any exceptions that occur during the request
+    return {'error': e.toString()};
+  }
+}
+
 }
 
