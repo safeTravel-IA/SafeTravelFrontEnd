@@ -75,19 +75,33 @@ class _ForumState extends State<Forum> {
         padding: const EdgeInsets.all(16.0),
         itemCount: forumPosts.length,
         itemBuilder: (context, index) {
-          final post = forumPosts[index];
-          return Dismissible(
-            key: Key(post['_id']),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              color: Colors.red,
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Icon(Icons.delete, color: Colors.white),
-            ),
-            confirmDismiss: (direction) {
-              return _confirmDeletePost(context, post['_id']);
-            },
+           final post = forumPosts[index];
+                final currentUser = Provider.of<UserProvider>(context, listen: false).userId;
+                final creatorId = post['userId'] is Map<String, dynamic> && post['userId']['_id'] is String
+                    ? post['userId']['_id']
+                    : '';
+
+                return Dismissible(
+                  key: Key(post['_id']),
+                  direction: currentUser == creatorId ? DismissDirection.endToStart : DismissDirection.none,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Icon(Icons.delete, color: Colors.white),
+                  ),
+                  confirmDismiss: (direction) async {
+                    if (currentUser == creatorId) {
+                      return _confirmDeletePost(context, post['_id']);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('You are not authorized to delete this post'),
+                        ),
+                      );
+                      return false;
+                    }
+                  },
 child: _buildForumPost(
   
   postId: post['_id'] is String ? post['_id'] : '', // Ensure _id is a string
@@ -105,8 +119,10 @@ child: _buildForumPost(
       ? (post['hashtags'] as List<dynamic>).map((e) => e.toString()).toList()
       : [],
 
-  creatorId: post['userId'] is String ? post['userId'] : '', // Ensure creatorId is a string
-)
+                    creatorId: post['userId'] is Map<String, dynamic> && post['userId']['_id'] is String
+                        ? post['userId']['_id']
+                        : '',
+                  ),
 
           );
         },
@@ -140,6 +156,9 @@ Widget _buildForumPost({
 
   final currentUser = Provider.of<UserProvider>(context, listen: false).userId;
 
+    print('currentUser: $currentUser');
+    print('creatorId: $creatorId');
+    print('Is current user the creator? ${currentUser == creatorId}');
   return Card(
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     child: Padding(
@@ -190,7 +209,7 @@ Widget _buildForumPost({
               SizedBox(width: 8),
               if (currentUser == creatorId)
                 IconButton(
-                  icon: Image.asset('assets/images/ed.png'),
+                  icon: Icon(Icons.edit),
                   onPressed: () => _editForumPost(postId, title ?? '', content ?? ''),
                 ),
             ],
@@ -281,8 +300,10 @@ Future<bool> _confirmDeletePost(BuildContext context, String postId) async {
             Navigator.of(ctx).pop(false); // Return false on cancel
           },
         ),
+        
         TextButton(
           child: Text('Delete'),
+          
           onPressed: () async {
             final result = await Provider.of<UserProvider>(context, listen: false).deleteForumPost(postId);
             if (result.containsKey('error')) {

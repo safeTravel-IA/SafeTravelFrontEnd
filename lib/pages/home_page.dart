@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    Navigator.pushReplacementNamed(context, '/login');
+    Navigator.pushReplacementNamed(context, '/signin');
   }
 
   void _showLogoutConfirmationDialog() {
