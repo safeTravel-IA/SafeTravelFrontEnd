@@ -444,6 +444,16 @@ Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) 
       return {'error': e.toString()};
     }
   }
+  Future<List<dynamic>> fetchPostData() async {
+  final response = await http.get(Uri.parse('http://10.0.2.2:3000/api/forum/getA'));
+  if (response.statusCode == 200) {
+    // Decode the response body as a list of dynamic
+    return json.decode(response.body) as List<dynamic>;
+  } else {
+    throw Exception('Failed to load post data');
+  }
+}
+
 
   // Get All Forum Posts
   Future<Map<String, dynamic>> getAllForumPosts() async {
