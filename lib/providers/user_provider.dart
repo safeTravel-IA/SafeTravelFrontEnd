@@ -18,6 +18,16 @@ class UserProvider with ChangeNotifier {
   String? _longitude;
   String? _latitudeD;
   String? _longitudeD;
+    List<dynamic> _friends = [];
+  String _statusMessage = '';
+    List<dynamic> get friends => _friends;
+      List<Map<String, dynamic>> _usernames = []; // Initialize usernames list
+
+  List<Map<String, dynamic>> get usernames => _usernames;
+
+      String get statusMessage => _statusMessage;
+
+
     // State variables
   String? _conversionError;
   double? _convertedAmount;
@@ -567,6 +577,115 @@ Future<void> fetchWeatherNews(String destination, double? lat, double? lon) asyn
     _error = e.toString();
     notifyListeners();
   }
+}
+
+
+
+// Share Location with Friends
+  Future<void> shareLocationWithFriends({
+    required String userId,
+    required Map<String, dynamic> locationData,
+  }) async {
+    final response = await UserApiService.shareLocationWithFriends(
+      userId: userId,
+      locationData: locationData,
+    );
+
+    if (response.containsKey('error')) {
+      _statusMessage = response['error'];
+    } else {
+      _statusMessage = 'Location shared successfully!';
+    }
+    notifyListeners();
+  }
+
+  // Accept Friend Request
+  Future<void> acceptFriend({required String userId, required String friendId}) async {
+    final response = await UserApiService.acceptFriend(
+      userId: userId,
+      friendId: friendId,
+    );
+
+    if (response.containsKey('error')) {
+      _statusMessage = response['error'];
+    } else {
+      _statusMessage = 'Friend request accepted successfully!';
+      await listFriends(userId: userId); // Update friends list after accepting request
+    }
+    notifyListeners();
+  }
+
+
+
+  // List Friends
+Future<void> listFriends({required String userId}) async {
+  final response = await UserApiService.listFriends(userId: userId);
+
+  if (response.containsKey('error')) {
+    _statusMessage = response['error'];
+    _friends = [];
+  } else {
+    // Extract the friends list from the response
+    final friendsList = response['friends'] ?? [];
+    _friends = friendsList.map((friend) {
+      return {
+        'id': friend['id'],
+        'username': friend['username'], // Capture the username here
+        'profilePicture': friend['profilePicture']
+      };
+    }).toList();
+    _statusMessage = 'Friends list updated!';
+  }
+  notifyListeners();
+}
+
+
+  // Add a Friend
+  Future<void> addFriend({
+    required String userId,
+    required String friendId,
+  }) async {
+    final response = await UserApiService.addFriend(
+      userId: userId,
+      friendId: friendId,
+    );
+
+    if (response.containsKey('error')) {
+      _statusMessage = response['error'];
+    } else {
+      _statusMessage = 'Friend added successfully!';
+      await listFriends(userId: userId); // Update friends list after adding a friend
+    }
+    notifyListeners();
+  }
+Future<void> fetchAllUsernames(String currentUserId) async {
+  final response = await UserApiService.listAllUsernames(currentUserId);
+
+  if (response.containsKey('data')) {
+    // Ensure 'data' is a list of maps
+    if (response['data'] is List) {
+      _usernames = List<Map<String, dynamic>>.from(
+        response['data'].map((item) {
+          // Ensure each item is a map
+          if (item is Map<String, dynamic>) {
+            return item;
+          } else if (item is String) {
+            // Handle if item is a string, for instance by creating a map with the string
+            return {'id': item, 'username': item}; // Adjust as needed
+          }
+          return {}; // Return an empty map if the item is neither
+        }),
+      );
+    } else {
+      _usernames = []; // Clear list if 'data' is not a list
+    }
+    _errorMessage = '';
+  } else if (response.containsKey('error')) {
+    _errorMessage = response['error'];
+    _usernames = []; // Clear the list on error
+  }
+
+  notifyListeners(); // Notify listeners to rebuild UI
 }
 
 }

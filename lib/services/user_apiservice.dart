@@ -508,5 +508,162 @@ static Future<Map<String, dynamic>> getWeatherNews(
   }
 }
 
+
+  // Share Location with Friends
+  static Future<Map<String, dynamic>> shareLocationWithFriends({
+    required String userId,
+    required Map<String, dynamic> locationData,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/share-location'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'locationData': locationData,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return {'error': 'Error sharing location: ${response.body}'};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Accept Friend Request
+  static Future<Map<String, dynamic>> acceptFriend({
+    required String userId,
+    required String friendId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/accept-friend'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'friendId': friendId,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return {'error': 'Error accepting friend request: ${response.body}'};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+// List Friends
+static Future<Map<String, dynamic>> listFriends({required String userId}) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/list-friends?userId=$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Parse the JSON response
+      final List<dynamic> data = jsonDecode(response.body);
+
+      // Check if the data is a list and process it
+      if (data is List) {
+        return {
+          'friends': data.map((friend) {
+            return {
+              'id': friend['_id'],
+              'username': friend['username'],
+              'profilePicture': friend['profilePicture']
+            };
+          }).toList()
+        };
+      } else {
+        return {'error': 'Unexpected response format'};
+      }
+    } else {
+      return {'error': 'Error listing friends: ${response.body}'};
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
+
+
+  // Add a Friend
+  static Future<Map<String, dynamic>> addFriend({
+    required String userId,
+    required String friendId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/add-friend'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'friendId': friendId,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return {'error': 'Error adding friend: ${response.body}'};
+      }
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+ 
+  static Future<Map<String, dynamic>> listAllUsernames(String currentUserId) async {
+  try {
+    if (currentUserId.isEmpty) {
+      return {'error': 'Current user ID is required'};
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/users?currentUserId=$currentUserId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isNotEmpty) {
+        try {
+          final data = jsonDecode(response.body);
+          // Ensure data is a list of maps
+          if (data is List) {
+            return {'data': data};
+          } else {
+            return {'error': 'Expected a list of usernames'};
+          }
+        } catch (e) {
+          return {'error': 'Invalid JSON response: $e'};
+        }
+      } else {
+        return {'error': 'Empty response'};
+      }
+    } else {
+      if (response.body.isNotEmpty) {
+        try {
+          final error = jsonDecode(response.body)['message'];
+          return {'error': error};
+        } catch (e) {
+          return {'error': 'Invalid JSON error response: $e'};
+        }
+      } else {
+        return {'error': 'Unexpected error with empty response'};
+      }
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
+
 }
 

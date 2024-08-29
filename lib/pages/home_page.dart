@@ -3,6 +3,7 @@ import 'package:safetravelfrontend/pages/currency_convertor.dart';
 import 'package:safetravelfrontend/pages/destinations_list.dart';
 import 'package:safetravelfrontend/pages/forum.dart';
 import 'package:safetravelfrontend/pages/map_screen.dart';
+import 'package:safetravelfrontend/pages/share_location.dart';
 import 'package:safetravelfrontend/pages/translation_screen.dart';
 import 'package:safetravelfrontend/pages/weather_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,7 +74,7 @@ class _HomePageState extends State<HomePage> {
     MapScreen(),
     Forum(), // Add your third page here
     Placeholder(), // Add your third page here
-    Placeholder(), // Add your third page here
+    ShareLocationScreen(), // Add your third page here
     WeatherScreen(), // Add your third page here
     CurrencyConverter(),
     TranslationScreen(),
