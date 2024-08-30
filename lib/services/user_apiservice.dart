@@ -669,6 +669,31 @@ static Future<Map<String, dynamic>> listFriends({required String userId}) async 
   }
 }
 
+static Future<Map<String, dynamic>> fetchMessagesByUserId(String userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/messages/$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> messageList = jsonDecode(response.body);
+      // Parse each message into a Map<String, dynamic>
+      final List<Map<String, dynamic>> messages = messageList.map((message) => {
+        'username': message['username'],
+        'sentAt': message['sentAt'],
+        'content': message['content'],
+      }).toList();
+
+      return {'messages': messages};
+    } else {
+      return {'error': 'Failed to load messages'};
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
 
 }
 

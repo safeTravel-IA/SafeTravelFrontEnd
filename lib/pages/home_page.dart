@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:safetravelfrontend/pages/currency_convertor.dart';
 import 'package:safetravelfrontend/pages/destinations_list.dart';
 import 'package:safetravelfrontend/pages/forum.dart';
+import 'package:safetravelfrontend/pages/local_contacts.dart';
 import 'package:safetravelfrontend/pages/map_screen.dart';
 import 'package:safetravelfrontend/pages/share_location.dart';
 import 'package:safetravelfrontend/pages/translation_screen.dart';
@@ -73,7 +74,7 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     MapScreen(),
     Forum(), // Add your third page here
-    Placeholder(), // Add your third page here
+    LocalContacts(), // Add your third page here
     ShareLocationScreen(), // Add your third page here
     WeatherScreen(), // Add your third page here
     CurrencyConverter(),

@@ -177,7 +177,54 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
     });
   }
 }
+Future<void> _showMessagesDialog() async {
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  final userId = userProvider.userId ?? '';
 
+  if (userId.isNotEmpty) {
+    await userProvider.fetchMessagesByUserId(userId);
+
+showDialog(
+  context: context,
+  builder: (context) {
+    return AlertDialog(
+      title: Text('Messages'),
+      content: userProvider.isLoading
+          ? Center(child: CircularProgressIndicator())
+          : userProvider.errorMessage != null
+              ? Text('Error: ${userProvider.errorMessage}')
+              : Container(
+                  width: double.maxFinite, // Ensures the ListView uses available width
+                  child: ListView.builder(
+                    itemCount: userProvider.messages.length,
+                    itemBuilder: (context, index) {
+                      final message = userProvider.messages[index];
+                      return ListTile(
+                        title: Text(message['username'] ?? 'Unknown'),
+                        subtitle: Text(
+                          'Sent At: ${message['sentAt']}\nContent: ${message['content'] ?? 'No Content'}',
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        isThreeLine: true,
+                      );
+                    },
+                  ),
+                ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Close'),
+        ),
+      ],
+    );
+  },
+);
+
+  } else {
+    print('User ID is null or empty');
+  }
+}
 
 
 
@@ -188,6 +235,10 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
       appBar: AppBar(
         title: Text('Share Location and Manage Friends'),
         actions: [
+            IconButton(
+            icon: Image.asset('assets/images/mail.png'), // The icon to open messages dialog
+            onPressed: _showMessagesDialog,
+          ),
           IconButton(
             icon: Image.asset('assets/images/request.png'),
             onPressed: _fetchUsernames,

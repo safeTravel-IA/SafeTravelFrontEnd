@@ -15,15 +15,20 @@ class UserProvider with ChangeNotifier {
   String? _password; // Add password field
   String? _errorMessage;
   String? _latitude;
+    bool _isLoading = false;
+
   String? _longitude;
   String? _latitudeD;
+    List<dynamic> _messages = [];
+
   String? _longitudeD;
     List<dynamic> _friends = [];
   String _statusMessage = '';
     List<dynamic> get friends => _friends;
       List<Map<String, dynamic>> _usernames = []; // Initialize usernames list
-
+ List<dynamic> get messages => _messages;
   List<Map<String, dynamic>> get usernames => _usernames;
+  bool get isLoading => _isLoading;
 
       String get statusMessage => _statusMessage;
 
@@ -690,6 +695,29 @@ Future<void> fetchAllUsernames(String currentUserId) async {
 
   notifyListeners(); // Notify listeners to rebuild UI
 }
+
+
+
+Future<void> fetchMessagesByUserId(String userId) async {
+  _isLoading = true;
+  notifyListeners();
+
+  final result = await UserApiService.fetchMessagesByUserId(userId);
+
+  print('Fetch Messages Result: $result'); // Debugging line
+
+  if (result.containsKey('error')) {
+    _errorMessage = result['error'];
+  } else {
+    _messages = List<Map<String, dynamic>>.from(result['messages']);
+    _errorMessage = null;
+  }
+
+  _isLoading = false;
+  notifyListeners();
+}
+
+
 
 }
 
