@@ -1,4 +1,4 @@
-// ShareLocationScreen.dart
+import 'dart:async'; // Import for using Timer
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -13,7 +13,8 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
   String _message = "Location not shared yet.";
   IO.Socket? _socket;
   List<Map<String, dynamic>> _usernames = [];
-  List<Map<String, dynamic>> _friends = []; // Store friends list
+  List<Map<String, dynamic>> _friends = [];
+  Timer? _friendsUpdateTimer;
 
   @override
   void initState() {
@@ -21,17 +22,14 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
     _initializeSocket();
     _fetchGeolocation();
     _fetchUsernames();
-    _fetchFriends(); // Fetch friends list
-    
+    _startAutoUpdateFriends(); // Start auto-updating friends list
   }
 
   // Initialize the Socket.IO connection
   void _initializeSocket() {
     _socket = IO.io(
       'http://10.0.2.2:3000/',
-      IO.OptionBuilder()
-          .setTransports(['websocket'])
-          .build(),
+      IO.OptionBuilder().setTransports(['websocket']).build(),
     );
 
     _socket?.onConnect((_) {
@@ -47,7 +45,6 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
 
     _socket?.on('friend_request_received', (data) {
       print('Friend request received: $data');
-      // Update the UI or notify user about the new friend request
     });
 
     _socket?.onDisconnect((_) {
@@ -64,12 +61,13 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
       });
     });
   }
-    // Fetch geolocation
-   Future<void> _fetchGeolocation() async {
+
+  // Fetch geolocation
+  Future<void> _fetchGeolocation() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
-      await userProvider.fetchGeolocation(); // Call the provider's method
+      await userProvider.fetchGeolocation();
 
       final latitude = userProvider.latitude;
       final longitude = userProvider.longitude;
@@ -90,13 +88,12 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
     }
   }
 
-
-  // Fetch usernames and friends
+  // Fetch usernames
   Future<void> _fetchUsernames() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId;
+    final userId = userProvider.userId ?? '';
 
-    if (userId != null && userId.isNotEmpty) {
+    if (userId.isNotEmpty) {
       await userProvider.fetchAllUsernames(userId);
 
       if (userProvider.usernames is List<Map<String, dynamic>>) {
@@ -114,105 +111,98 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
     }
   }
 
+  // Fetch friends
   Future<void> _fetchFriends() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId;
+    final userId = userProvider.userId ?? '';
 
-    if (userId != null && userId.isNotEmpty) {
+    if (userId.isNotEmpty) {
       await userProvider.listFriends(userId: userId);
       setState(() {
-        _friends = List<Map<String, dynamic>>.from(userProvider.friends); // Assume you have a friends list in UserProvider
+        _friends = List<Map<String, dynamic>>.from(userProvider.friends);
       });
     } else {
       print('User ID is null or empty');
     }
   }
 
-  // Function to share location
-  Future<void> _shareLocation() async {
-    try {
-      final locationProvider = Provider.of<UserProvider>(context, listen: false);
-      await locationProvider.fetchGeolocation();
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final userId = userProvider.userId ?? "";
-
-      final latitude = locationProvider.latitude;
-      final longitude = locationProvider.longitude;
-
-      if (latitude != null && longitude != null) {
-        String locationMessage =
-            'https://maps.google.com/?q=$latitude,$longitude';
-
-        _socket?.emit('share_location', {
-          'latitude': latitude,
-          'longitude': longitude,
-          'message': locationMessage,
-        });
-
-        await locationProvider.shareLocationWithFriends(
-          userId: userId,
-          locationData: {'latitude': latitude, 'longitude': longitude},
-        );
-
-        setState(() {
-          _message = "Location shared successfully!";
-        });
-      } else {
-        setState(() {
-          _message = "Failed to fetch location from provider.";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _message = "Failed to share location: $e";
-      });
-    }
+  // Start auto-updating friends list every 3 seconds
+  void _startAutoUpdateFriends() {
+    _fetchFriends(); // Initial fetch
+    _friendsUpdateTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+      _fetchFriends();
+    });
   }
 
-  // Accept friend request
-  void _acceptFriend(String friendId) async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId ?? "";
-
-    if (userId.isNotEmpty) {
-      await userProvider.acceptFriend(userId: userId, friendId: friendId);
-      setState(() {
-        _message = userProvider.statusMessage ?? "Friend request accepted!";
-      });
-    }
-  }
-
+  // Stop auto-updating friends list
   @override
   void dispose() {
     _socket?.disconnect();
+    _friendsUpdateTimer?.cancel();
     super.dispose();
   }
+
+  Future<void> _shareLocation() async {
+  try {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.fetchGeolocation();
+    final userId = userProvider.userId ?? '';
+
+    final latitude = userProvider.latitude;
+    final longitude = userProvider.longitude;
+
+    if (latitude != null && longitude != null) {
+      // Convert locationData to a Map<String, dynamic>
+      final locationData = {
+        'coordinates': [latitude, longitude], // Send as list of numbers
+        'message': 'Hey, I am here!',
+      };
+
+      await userProvider.shareLocationWithFriends(
+        userId: userId,
+        locationData: locationData,
+      );
+
+      setState(() {
+        _message = userProvider.statusMessage ?? "Location shared successfully!";
+      });
+    } else {
+      setState(() {
+        _message = "Failed to fetch location from provider.";
+      });
+    }
+  } catch (e) {
+    setState(() {
+      _message = "Failed to share location: $e";
+    });
+  }
+}
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    appBar: AppBar(
-      title: Text('Share Location and Manage Friends'),
-      actions: [
-        IconButton(
-          icon: Image.asset('assets/images/request.png'),
-          onPressed: () {
-            // Check for friend requests and display the dialog
-            _showFriendRequestDialog();
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.group),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FriendsListScreen(friends: _friends),
+      appBar: AppBar(
+        title: Text('Share Location and Manage Friends'),
+        actions: [
+          IconButton(
+            icon: Image.asset('assets/images/request.png'),
+            onPressed: _fetchUsernames,
+          ),
+          IconButton(
+            icon: Icon(Icons.group),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => _buildFriendsListScreen(),
+              ),
             ),
           ),
-        ),
-        
-      ],
-    ),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +215,7 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
             SizedBox(height: 20),
             _buildShareLocationButton(),
             SizedBox(height: 20),
-            Expanded(child: _buildUsernamesList()), // Display usernames
+            Expanded(child: _buildUsernamesList()),
           ],
         ),
       ),
@@ -252,51 +242,43 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
             SizedBox(width: 10),
             Text(
               'Share Location',
-              style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold),
             ),
           ],
         ),
       ),
     );
   }
-void _showFriendRequestDialog() {
-  if (_friends.isNotEmpty) {
-    // Show the first pending friend request, or an empty map if none are found
-    final friendRequest = _friends.firstWhere(
-      (friend) => friend['status'] == 'pending',
-      orElse: () => {}, // Return an empty map instead of null
-    );
 
-    // Check if the returned map is not empty, indicating a pending request was found
-    if (friendRequest.isNotEmpty) {
-      showDialog(
-        context: context,
-        builder: (context) => FriendRequestDialog(
-          friendId: friendRequest['id'],
-          onAccept: (friendId) {
-            _acceptFriend(friendId); // Handle the acceptance of the friend request
-          },
-        ),
-      );
-    } else {
-      setState(() {
-        _message = "No pending friend requests.";
-      });
-    }
-  } else {
-    setState(() {
-      _message = "No friend requests available.";
-    });
+  Widget _buildFriendsListScreen() {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Friends List'),
+      ),
+      body: ListView.builder(
+        itemCount: _friends.length,
+        itemBuilder: (context, index) {
+          final friend = _friends[index];
+          return ListTile(
+            title: Text(friend['username'] ?? 'Unknown'),
+            subtitle: Text(friend['address'] ?? 'No Status'),
+          );
+        },
+      ),
+    );
   }
-}
 
   Widget _buildUsernamesList() {
     return ListView.builder(
       itemCount: _usernames.length,
       itemBuilder: (context, index) {
         final user = _usernames[index];
-        final userId = user['id'];
-        final username = user['username'];
+        final userId = user['id'] ?? ''; // Handle null case
+        final username = user['username'] ?? '';
+        final address = user['address'] ??'';
 
         return ListTile(
           leading: CircleAvatar(
@@ -307,83 +289,15 @@ void _showFriendRequestDialog() {
             icon: Icon(Icons.person_add),
             onPressed: () async {
               final userProvider = Provider.of<UserProvider>(context, listen: false);
-              final currentUserId = userProvider.userId ?? "";
-
-              if (userId != currentUserId) {
-                await userProvider.addFriend(userId: currentUserId, friendId: userId);
-                setState(() {
-                  _message = "User added successfully!";
-                });
-              } else {
-                setState(() {
-                  _message = "Cannot add yourself as a friend.";
-                });
-              }
+              await userProvider.addFriend(
+                userId: userProvider.userId!,
+                friendId: userId,
+              );
+              _fetchFriends(); // Refresh friends list after sending a request
             },
           ),
         );
       },
-    );
-  }
-}
-
-
-class FriendsListScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> friends;
-
-  FriendsListScreen({required this.friends});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Friends List'),
-      ),
-      body: ListView.builder(
-        itemCount: friends.length,
-        itemBuilder: (context, index) {
-          final friend = friends[index];
-          final friendId = friend['id'];
-          final username = friend['username'];
-
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: AssetImage('assets/images/default-profile.png'),
-            ),
-            title: Text(username),
-          );
-        },
-      ),
-    );
-  }
-}
-
- // Fetch usernames from the provider Future
- //<void> _fetchUsernames() async { final userProvider = Provider.of<UserProvider>(context, listen: false); final userId = userProvider.userId; if (userId != null && userId.isNotEmpty) { await userProvider.fetchAllUsernames(userId); // Fetch all usernames // Ensure that userProvider.usernames is a list of maps if (userProvider.usernames is List<Map<String, dynamic>>) { setState(() { _usernames = List<Map<String, dynamic>>.from(userProvider.usernames); // Store usernames }); } else { // Handle unexpected format print('Error: Usernames are not in the expected format'); setState(() { _usernames = []; // Clear the list or handle as necessary }); } // Print the fetched usernames for debugging print('Fetched usernames: $_usernames'); } else { print('User ID is null or empty'); } } 
-class FriendRequestDialog extends StatelessWidget {
-  final String friendId;
-  final Function(String) onAccept;
-
-  FriendRequestDialog({required this.friendId, required this.onAccept});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Accept Friend Request'),
-      content: Text('Do you want to accept the friend request from this user?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            onAccept(friendId);
-            Navigator.of(context).pop();
-          },
-          child: Text('Accept'),
-        ),
-      ],
     );
   }
 }

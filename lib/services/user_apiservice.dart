@@ -510,29 +510,33 @@ static Future<Map<String, dynamic>> getWeatherNews(
 
 
   // Share Location with Friends
-  static Future<Map<String, dynamic>> shareLocationWithFriends({
-    required String userId,
-    required Map<String, dynamic> locationData,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/share-location'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userId': userId,
-          'locationData': locationData,
-        }),
-      );
+static Future<Map<String, dynamic>> shareLocationWithFriends({
+  required String userId,
+  required Map<String, dynamic> locationData,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/share-location'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'locationData': {
+          'coordinates': locationData['coordinates'],
+          'message': locationData['message'],
+        },
+      }),
+    );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        return {'error': 'Error sharing location: ${response.body}'};
-      }
-    } catch (e) {
-      return {'error': e.toString()};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      return {'error': 'Error sharing location: ${response.body}'};
     }
+  } catch (e) {
+    return {'error': e.toString()};
   }
+}
+
 
   // Accept Friend Request
   static Future<Map<String, dynamic>> acceptFriend({
@@ -578,6 +582,7 @@ static Future<Map<String, dynamic>> listFriends({required String userId}) async 
             return {
               'id': friend['_id'],
               'username': friend['username'],
+              'address': friend['address'],
               'profilePicture': friend['profilePicture']
             };
           }).toList()

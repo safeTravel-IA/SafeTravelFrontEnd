@@ -582,22 +582,23 @@ Future<void> fetchWeatherNews(String destination, double? lat, double? lon) asyn
 
 
 // Share Location with Friends
-  Future<void> shareLocationWithFriends({
-    required String userId,
-    required Map<String, dynamic> locationData,
-  }) async {
-    final response = await UserApiService.shareLocationWithFriends(
-      userId: userId,
-      locationData: locationData,
-    );
+Future<void> shareLocationWithFriends({
+  required String userId,
+  required Map<String, dynamic> locationData,
+}) async {
+  final response = await UserApiService.shareLocationWithFriends(
+    userId: userId,
+    locationData: locationData,
+  );
 
-    if (response.containsKey('error')) {
-      _statusMessage = response['error'];
-    } else {
-      _statusMessage = 'Location shared successfully!';
-    }
-    notifyListeners();
+  if (response.containsKey('error')) {
+    _statusMessage = response['error'];
+  } else {
+    _statusMessage = 'Location shared successfully!';
   }
+  notifyListeners();
+}
+
 
   // Accept Friend Request
   Future<void> acceptFriend({required String userId, required String friendId}) async {
@@ -631,6 +632,8 @@ Future<void> listFriends({required String userId}) async {
       return {
         'id': friend['id'],
         'username': friend['username'], // Capture the username here
+         'address': friend['address'], // Capture the username here
+
         'profilePicture': friend['profilePicture']
       };
     }).toList();
