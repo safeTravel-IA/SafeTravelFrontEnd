@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:safetravelfrontend/pages/destination_plan.dart';
+import 'package:safetravelfrontend/pages/weather_screen.dart'; // Import WeatherScreen
+import 'package:safetravelfrontend/pages/destination_plan.dart'; // Import DestinationPlanning
 import 'package:safetravelfrontend/pages/top_appbar.dart'; // Import TopAppBar widget
 import 'package:safetravelfrontend/providers/user_provider.dart';
 import 'package:safetravelfrontend/model/destination_model.dart';
@@ -96,16 +97,32 @@ class _DestinationsListState extends State<DestinationsList> {
                     leading: CircleAvatar(
                       backgroundImage: NetworkImage(imageUrl),
                     ),
-                    trailing: IconButton(
-                      icon: Image.asset('assets/images/planning.png'),
-onPressed: () {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => DestinationPlanning(destinationId: destination.id),
-    ),
-  );
-                      },
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Image.asset('assets/images/planning.png'), // Planning icon
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DestinationPlanning(destinationId: destination.id),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: Image.asset('assets/images/weather.png'), // Weather icon
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WeatherScreen(destination: destination.name),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                     onTap: () {
                       // Optional: Handle taps on the ListTile if needed

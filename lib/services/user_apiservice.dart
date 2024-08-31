@@ -693,7 +693,68 @@ static Future<Map<String, dynamic>> fetchMessagesByUserId(String userId) async {
     return {'error': e.toString()};
   }
 }
+   // Method to fetch all hospitals
+  static Future<Map<String, dynamic>> fetchAllHospitals() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/hospitals'));
 
+      final Map<String, dynamic> result = {};
+      if (response.statusCode == 200) {
+        if (response.body.isNotEmpty) {
+          try {
+            result['data'] = jsonDecode(response.body) as List<dynamic>;
+          } catch (e) {
+            result['error'] = 'Invalid JSON response: $e';
+          }
+        } else {
+          result['error'] = 'Empty response';
+        }
+      } else {
+        result['error'] = 'Failed to load data';
+      }
+      return result;
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // Method to fetch a hospital by ID
+  static Future<Map<String, dynamic>> fetchHospitalById(String id) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/hospital/$id'));
+
+      final Map<String, dynamic> result = {};
+      if (response.statusCode == 200) {
+        if (response.body.isNotEmpty) {
+          try {
+            result['data'] = jsonDecode(response.body) as Map<String, dynamic>;
+          } catch (e) {
+            result['error'] = 'Invalid JSON response: $e';
+          }
+        } else {
+          result['error'] = 'Empty response';
+        }
+      } else {
+        result['error'] = 'Failed to load data';
+      }
+      return result;
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+static Future<Map<String, dynamic>> listHospitalsByName(String name) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/list-hospitals-by-name'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+
+    return _handleResponse(response);
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
 
 }
 

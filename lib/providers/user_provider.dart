@@ -16,11 +16,14 @@ class UserProvider with ChangeNotifier {
   String? _errorMessage;
   String? _latitude;
     bool _isLoading = false;
+Map<String, dynamic>? _hospital;
+List<Map<String, dynamic>> _hospitals = [];
 
   String? _longitude;
   String? _latitudeD;
     List<dynamic> _messages = [];
-
+Map<String, dynamic>? get hospital => _hospital;
+List<Map<String, dynamic>> get hospitals => _hospitals;
   String? _longitudeD;
     List<dynamic> _friends = [];
   String _statusMessage = '';
@@ -141,6 +144,11 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+    set hospitals(List<Map<String, dynamic>> value) {
+    _hospitals = value;
+    notifyListeners();
+  }
+
 
   // Save User Details Locally (Username and Password)
   Future<void> saveUserDetailsLocally() async {
@@ -717,8 +725,72 @@ Future<void> fetchMessagesByUserId(String userId) async {
   notifyListeners();
 }
 
+ Future<void> fetchHospitalById(String id) async {
+    final result = await UserApiService.fetchHospitalById(id);
 
+    if (result.containsKey('data')) {
+      _hospital = result['data'] as Map<String, dynamic>; // Update with fetched hospital data
+      _errorMessage = ''; // Clear any existing error message
+    } else if (result.containsKey('error')) {
+      _errorMessage = result['error']; // Update the private error message
+      _hospital = null; // Clear the hospital data if there's an error
+    } else {
+      _errorMessage = 'Unknown error occurred'; // Handle unexpected scenarios
+      _hospital = null;
+    }
 
+    notifyListeners(); // Notify listeners of state change
+  }
+
+  // Method to fetch all hospitals and update the state
+  Future<void> fetchAllHospitals() async {
+    final result = await UserApiService.fetchAllHospitals();
+
+    if (result.containsKey('data')) {
+      _hospitals = (result['data'] as List<dynamic>)
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+      _errorMessage = ''; // Clear any existing error message
+    } else if (result.containsKey('error')) {
+      _errorMessage = result['error']; // Update the private error message
+      _hospitals = []; // Clear the hospitals list if there's an error
+    } else {
+      _errorMessage = 'Unknown error occurred'; // Handle unexpected scenarios
+      _hospitals = [];
+    }
+
+    notifyListeners(); // Notify listeners of state change
+  }
+
+  Future<void> fetchHospitalsByName(String name) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:3000/api/hospitals/search?name=$name'),
+      );
+
+      print('API Response Status Code: ${response.statusCode}'); // Debugging line
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('API Response Data: $data'); // Debugging line
+        if (data is Map && data['hospitals'] is List) {
+          _hospitals = List<Map<String, dynamic>>.from(data['hospitals']);
+        } else {
+          _errorMessage = 'Unexpected data format';
+        }
+      } else {
+        _errorMessage = 'Failed to load hospitals: ${response.statusCode}';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+      print('Error: $e'); // Debugging line
+    }
+
+    notifyListeners();
+  }
 }
 
 

@@ -143,91 +143,88 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
   }
 
   Future<void> _shareLocation() async {
-  try {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.fetchGeolocation();
-    final userId = userProvider.userId ?? '';
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.fetchGeolocation();
+      final userId = userProvider.userId ?? '';
 
-    final latitude = userProvider.latitude;
-    final longitude = userProvider.longitude;
+      final latitude = userProvider.latitude;
+      final longitude = userProvider.longitude;
 
-    if (latitude != null && longitude != null) {
-      // Convert locationData to a Map<String, dynamic>
-      final locationData = {
-        'coordinates': [latitude, longitude], // Send as list of numbers
-        'message': 'Hey, I am here!',
-      };
+      if (latitude != null && longitude != null) {
+        // Convert locationData to a Map<String, dynamic>
+        final locationData = {
+          'coordinates': [latitude, longitude], // Send as list of numbers
+          'message': 'Hey, I am here!',
+        };
 
-      await userProvider.shareLocationWithFriends(
-        userId: userId,
-        locationData: locationData,
-      );
+        await userProvider.shareLocationWithFriends(
+          userId: userId,
+          locationData: locationData,
+        );
 
+        setState(() {
+          _message = userProvider.statusMessage ?? "Location shared successfully!";
+        });
+      } else {
+        setState(() {
+          _message = "Failed to fetch location from provider.";
+        });
+      }
+    } catch (e) {
       setState(() {
-        _message = userProvider.statusMessage ?? "Location shared successfully!";
-      });
-    } else {
-      setState(() {
-        _message = "Failed to fetch location from provider.";
+        _message = "Failed to share location: $e";
       });
     }
-  } catch (e) {
-    setState(() {
-      _message = "Failed to share location: $e";
-    });
   }
-}
-Future<void> _showMessagesDialog() async {
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-  final userId = userProvider.userId ?? '';
 
-  if (userId.isNotEmpty) {
-    await userProvider.fetchMessagesByUserId(userId);
+  Future<void> _showMessagesDialog() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.userId ?? '';
 
-showDialog(
-  context: context,
-  builder: (context) {
-    return AlertDialog(
-      title: Text('Messages'),
-      content: userProvider.isLoading
-          ? Center(child: CircularProgressIndicator())
-          : userProvider.errorMessage != null
-              ? Text('Error: ${userProvider.errorMessage}')
-              : Container(
-                  width: double.maxFinite, // Ensures the ListView uses available width
-                  child: ListView.builder(
-                    itemCount: userProvider.messages.length,
-                    itemBuilder: (context, index) {
-                      final message = userProvider.messages[index];
-                      return ListTile(
-                        title: Text(message['username'] ?? 'Unknown'),
-                        subtitle: Text(
-                          'Sent At: ${message['sentAt']}\nContent: ${message['content'] ?? 'No Content'}',
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+    if (userId.isNotEmpty) {
+      await userProvider.fetchMessagesByUserId(userId);
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Messages'),
+            content: userProvider.isLoading
+                ? Center(child: CircularProgressIndicator())
+                : userProvider.errorMessage != null
+                    ? Text('Error: ${userProvider.errorMessage}')
+                    : Container(
+                        width: double.maxFinite, // Ensures the ListView uses available width
+                        child: ListView.builder(
+                          itemCount: userProvider.messages.length,
+                          itemBuilder: (context, index) {
+                            final message = userProvider.messages[index];
+                            return ListTile(
+                              title: Text(message['username'] ?? 'Unknown'),
+                              subtitle: Text(
+                                'Sent At: ${message['sentAt']}\nContent: ${message['content'] ?? 'No Content'}',
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              isThreeLine: true,
+                            );
+                          },
                         ),
-                        isThreeLine: true,
-                      );
-                    },
-                  ),
-                ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Close'),
-        ),
-      ],
-    );
-  },
-);
-
-  } else {
-    print('User ID is null or empty');
+                      ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      print('User ID is null or empty');
+    }
   }
-}
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +232,7 @@ showDialog(
       appBar: AppBar(
         title: Text('Share Location and Manage Friends'),
         actions: [
-            IconButton(
+          IconButton(
             icon: Image.asset('assets/images/mail.png'), // The icon to open messages dialog
             onPressed: _showMessagesDialog,
           ),
@@ -327,28 +324,38 @@ showDialog(
       itemCount: _usernames.length,
       itemBuilder: (context, index) {
         final user = _usernames[index];
-        final userId = user['id'] ?? ''; // Handle null case
-        final username = user['username'] ?? '';
-        final address = user['address'] ??'';
-
+        final userId = user['id'] ?? ''; // Handle null id
+        final username = user['username'] ?? 'Unknown';
         return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: AssetImage('assets/images/default-profile.png'),
-          ),
           title: Text(username),
-          trailing: IconButton(
-            icon: Icon(Icons.person_add),
-            onPressed: () async {
-              final userProvider = Provider.of<UserProvider>(context, listen: false);
-              await userProvider.addFriend(
-                userId: userProvider.userId!,
-                friendId: userId,
-              );
-              _fetchFriends(); // Refresh friends list after sending a request
+          trailing: ElevatedButton(
+            onPressed: () {
+              _addFriend(userId);
             },
+            child: Text('Send Request'),
           ),
         );
       },
     );
   }
+
+  void _addFriend(String friendId) async {
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  final userId = userProvider.userId ?? '';
+
+  if (userId.isNotEmpty) {
+    // Call addFriend instead of sendFriendRequest
+    await userProvider.addFriend(
+      userId: userId,
+      friendId: friendId,
+    );
+
+    setState(() {
+      _message = userProvider.statusMessage ?? "Friend added successfully!";
+    });
+  } else {
+    print('User ID is null or empty');
+  }
+}
+
 }

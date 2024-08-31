@@ -1,176 +1,149 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http; // Add this import
+import 'package:safetravelfrontend/providers/user_provider.dart';
 
 class LocalContacts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF4EDEB), // Background color
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top section with time, network, etc.
+    return ChangeNotifierProvider(
+      create: (context) => UserProvider()..fetchAllHospitals(), // Initialize and fetch hospitals
+      child: Scaffold(
+        backgroundColor: Color(0xFFF4EDEB),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 16),
+              Text(
+                'Local Contacts',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
 
-            SizedBox(height: 16),
-            Text(
-              'Local Contacts',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+      
+              SizedBox(height: 16),
+              // Display hospital info using Consumer
+              Consumer<UserProvider>(
+                builder: (context, userProvider, child) {
+                  final errorMessage = userProvider.errorMessage ?? '';
+
+                  if (errorMessage.isNotEmpty) {
+                    return Text(errorMessage, style: TextStyle(color: Colors.red));
+                  }
+
+                  if (userProvider.hospitals.isEmpty) {
+                    return Center(child: CircularProgressIndicator()); // Show a loading indicator
+                  }
+
+                  return Expanded(
+                    child: ListView.builder(
+                      itemCount: userProvider.hospitals.length,
+                      itemBuilder: (context, index) {
+                        final hospital = userProvider.hospitals[index];
+                        return _buildHospitalCard(
+                          hospital['imageUrl'] ?? 'assets/images/default_hospital.png', 
+                          hospital['name'] ?? 'Unknown Hospital',
+                          hospital['description'] ?? 'No description available',
+                          hospital['contactNumber'] ?? '', // Pass contact number
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-            ),
-            SizedBox(height: 16),
-            // Search bar
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/search.png',
+              // Call Police button
+              SizedBox(height: 16),
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () => _callPolice(),
+                  icon: Image.asset(
+                    'assets/images/call.png',
                     width: 24,
                     height: 24,
                   ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Please enter the hospital's or embassy's name, or contact the police.",
-                        border: InputBorder.none,
-                      ),
-                    ),
+                  label: Text('Call Police'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFADD8E6),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                    textStyle: TextStyle(fontSize: 18),
                   ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            // Hospital info
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: AssetImage('assets/images/hospital_image.png'),
                 ),
-                SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHospitalCard(String imageUrl, String name, String description, String contactNumber) {
+    final baseUrl = 'http://10.0.2.2:3000/api/image/';
+    String cleanedImage = imageUrl.startsWith('/uploads/')
+        ? imageUrl.substring(9)  // Remove the "/uploads/" prefix
+        : imageUrl;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: NetworkImage(baseUrl + cleanedImage),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(description),
+                SizedBox(height: 8),
+                Row(
                   children: [
-                    Text(
-                      'HOPITAL DE PNEUMO',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text('Medical - surgical services.'),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, size: 16),
-                        SizedBox(width: 4),
-                        Text('V59H+W7H, Ariana'),
-                      ],
+                    Icon(Icons.phone, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text(contactNumber),
+                    SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(Icons.call),
+                      onPressed: () => _makePhoneCall(contactNumber),
                     ),
                   ],
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            // Emergency, care, facilities
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildServiceButton('assets/images/car.png', 'emergency'),
-                _buildServiceButton('assets/images/love.png', 'care'),
-                _buildServiceButton('assets/images/health.png', 'facilities'),
-              ],
-            ),
-            Divider(height: 32, color: Colors.grey),
-            // New results section
-            Text(
-              'New results',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            SizedBox(height: 16),
-            // Horizontal list of hospitals
-            Expanded(
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _buildHospitalCard('assets/images/hospital1.png', 'Preston Hospital lekki', 'Open 24 hours'),
-                  _buildHospitalCard('assets/images/hospital2.png', 'Reddington Lekki Hospital', 'Opens 8am'),
-                  _buildHospitalCard('assets/images/hospital3.png', 'Vedic Lifecare Hospital', 'Open 24 hours'),
-                  // Add more hospital cards as needed
-                ],
-              ),
-            ),
-            // Call Police button
-            SizedBox(height: 16),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: Image.asset(
-                  'assets/images/call.png',
-                  width: 24,
-                  height: 24,
-                ),
-                label: Text('Call Police'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFADD8E6), // light blue color
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  textStyle: TextStyle(fontSize: 18),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServiceButton(String assetPath, String label) {
-    return Column(
-      children: [
-        Image.asset(
-          assetPath,
-          width: 40,
-          height: 40,
-        ),
-        SizedBox(height: 8),
-        Text(label),
-      ],
-    );
-  }
-
-  Widget _buildHospitalCard(String assetPath, String name, String status) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 16.0),
-      child: Column(
-        children: [
-          Image.asset(
-            assetPath,
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          ),
-          SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            status,
-            style: TextStyle(color: Colors.green),
           ),
         ],
       ),
     );
   }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final url = 'tel:$phoneNumber';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  void _callPolice() async {
+    final policeNumber = '197';
+    final url = 'tel:$policeNumber';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
 }
-
-

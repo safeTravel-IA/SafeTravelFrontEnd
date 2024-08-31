@@ -51,13 +51,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
       BottomNavigationBarItem(
         icon: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Image.asset('assets/images/weather.png', width: 24, height: 24),
-        ),
-        label: 'Weather',
-      ),
-      BottomNavigationBarItem(
-        icon: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
           child: Image.asset('assets/images/convertor.png', width: 24, height: 24),
         ),
         label: 'Convertor',

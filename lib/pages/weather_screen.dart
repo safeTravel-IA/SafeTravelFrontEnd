@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:safetravelfrontend/providers/user_provider.dart';
 
 class WeatherScreen extends StatefulWidget {
+  final String destination;
+
+  WeatherScreen({required this.destination});
+
   @override
   _WeatherScreenState createState() => _WeatherScreenState();
 }
@@ -14,7 +18,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
   void initState() {
     super.initState();
     _fetchWeatherFuture = Provider.of<UserProvider>(context, listen: false)
-        .fetchWeatherNews('Tunis', null, null);
+        .fetchWeatherNews(widget.destination, null, null);
   }
 
   @override
@@ -38,7 +42,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                       ),
                       SizedBox(width: 8),
                       Text(
-                        'Ariana',
+                        widget.destination,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14,

@@ -76,7 +76,6 @@ class _HomePageState extends State<HomePage> {
     Forum(), // Add your third page here
     LocalContacts(), // Add your third page here
     ShareLocationScreen(), // Add your third page here
-    WeatherScreen(), // Add your third page here
     CurrencyConverter(),
     TranslationScreen(),
 
