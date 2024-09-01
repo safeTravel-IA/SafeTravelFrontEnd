@@ -57,6 +57,9 @@ dev_dependencies:
   mime: ^1.0.0   # Add this line
   path_provider: ^2.0.8
   http_parser: ^4.0.0
+  chat_bubbles: ^1.0.1
+  speech_to_text: ^6.5.1
+
   url_launcher: ^6.1.5  # Check for the latest version
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

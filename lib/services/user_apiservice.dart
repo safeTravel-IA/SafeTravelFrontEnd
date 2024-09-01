@@ -149,7 +149,7 @@ class UserApiService {
 static Future<Map<String, dynamic>> fetchLocationCoordinates(String location) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/$location'),
+        Uri.parse('$baseUrl/forecast/$location'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -206,27 +206,40 @@ static Future<Map<String, dynamic>> fetchImages(String query) async {
     }
   }
 // Fetch Weather Alerts by Location
-static Future<Map<String, dynamic>> getWeatherAlerts(String destination, double? lat, double? lon) async {
-  try {
-    final body = {
-      'destination': destination, // Optional
-      // Only include lat and lon if they are not null
-      if (lat != null) 'lat': lat,
-      if (lon != null) 'lon': lon
-    };
+  static Future<Map<String, dynamic>> getWeatherAlerts(String destination, double? lat, double? lon) async {
+    try {
+      final body = {
+        'destination': destination, // Optional
+        // Only include lat and lon if they are not null
+        if (lat != null) 'lat': lat,
+        if (lon != null) 'lon': lon,
+      };
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/weather/alerts'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+      final response = await http.post(
+        Uri.parse('$baseUrl/weather/alerts'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
 
-    return _handleResponse(response);
-  } catch (e) {
-    return {'error': e.toString()};
+      // Check if the request was successful
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Parse the response data
+        return {
+          'weatherAlerts': List<String>.from(data['weatherAlerts'] ?? []),
+          'pollutionAlerts': List<String>.from(data['pollutionAlerts'] ?? []),
+          'message': data['message'] ?? '',
+        };
+      } else {
+        // Handle server-side errors
+        return {'error': 'Failed to fetch weather alerts. Status code: ${response.statusCode}'};
+      }
+    } catch (e) {
+      // Handle network errors or other exceptions
+      return {'error': e.toString()};
+    }
   }
-}
-
 
 static Future<http.Response> fetchUserImages(String urls) async {
     final url = Uri.parse('$baseUrl/user/images?urls=$urls');
@@ -755,6 +768,106 @@ static Future<Map<String, dynamic>> listHospitalsByName(String name) async {
     return {'error': e.toString()};
   }
 }
+static Future<Map<String, dynamic>> toggleLike({
+  required String postId,
+  required String userId,
+  required bool isLiked, // Include the current like status
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/toggleLike'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'postId': postId,
+        'userId': userId,
+        'isLiked': isLiked, // Pass the like status to the backend
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return {'data': jsonDecode(response.body)};
+    } else {
+      final errorResponse = jsonDecode(response.body);
+      return {'error': errorResponse['error'] ?? 'An error occurred'};
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
+
+static Future<Map<String, dynamic>> showAllLikes({
+  required String postId,
+}) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/posts/$postId/likes'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return {'data': jsonDecode(response.body)};
+    } else {
+      final errorResponse = jsonDecode(response.body);
+      return {'error': errorResponse['error'] ?? 'An error occurred'};
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
+
+static Future<Map<String, dynamic>> addComment({
+  required String postId,
+  required String userId,
+  required String content,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/comments'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'postId': postId,
+        'userId': userId,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 201) { // Created status
+      return {'data': jsonDecode(response.body)};
+    } else {
+      final errorResponse = jsonDecode(response.body);
+      return {'error': errorResponse['error'] ?? 'An error occurred'};
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
+static Future<Map<String, dynamic>> listComments({
+  required String postId,
+}) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/posts/$postId/comments'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final commentsData = jsonDecode(response.body) as List<dynamic>;
+      // Extract only the content of each comment
+      final commentsContent = commentsData.map((comment) => comment['content'] as String).toList();
+      return {'data': commentsContent};
+    } else {
+      final errorResponse = jsonDecode(response.body);
+      return {'error': errorResponse['error'] ?? 'An error occurred'};
+    }
+  } catch (e) {
+    return {'error': e.toString()};
+  }
+}
+
+
 
 }
 

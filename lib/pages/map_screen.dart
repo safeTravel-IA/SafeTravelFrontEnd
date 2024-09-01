@@ -155,8 +155,6 @@ class _MapScreenState extends State<MapScreen> {
 
   void _showWeatherAlertsDialog(BuildContext context) async {
   final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-  // Assuming destination is set using a TextEditingController named _destinationController
   final destination = _destinationController.text;
 
   if (destination.isEmpty) {
@@ -180,10 +178,11 @@ class _MapScreenState extends State<MapScreen> {
     return;
   }
 
-  // Fetch weather alerts based on the destination
+  // Fetch weather alerts
   await userProvider.fetchWeatherAlerts(destination);
 
-  final alerts = userProvider.weatherAlerts;
+  final weatherAlerts = userProvider.weatherAlerts;
+  final pollutionAlerts = userProvider.pollutionAlerts;
   final error = userProvider.error;
 
   showDialog(
@@ -193,12 +192,25 @@ class _MapScreenState extends State<MapScreen> {
         title: Text('Weather Alerts'),
         content: error != null
             ? Text('Error: $error')
-            : alerts != null && alerts.isNotEmpty
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: alerts.map((alert) => ListTile(title: Text(alert))).toList(),
-                  )
-                : Text('No weather alerts available.'),
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (weatherAlerts != null && weatherAlerts.isNotEmpty) ...[
+                    Text('Weather Alerts:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...weatherAlerts.map((alert) => ListTile(title: Text(alert))).toList(),
+                  ],
+                  if (pollutionAlerts != null && pollutionAlerts.isNotEmpty) ...[
+                    SizedBox(height: 10),
+                    Text('Pollution Alerts:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...pollutionAlerts.map((alert) => ListTile(title: Text(alert))).toList(),
+                  ],
+                  if ((weatherAlerts == null || weatherAlerts.isEmpty) &&
+                      (pollutionAlerts == null || pollutionAlerts.isEmpty)) ...[
+                    Text('No alerts available.'),
+                  ],
+                ],
+              ),
         actions: [
           TextButton(
             onPressed: () {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:safetravelfrontend/pages/text_inputpage.dart';
 import 'package:safetravelfrontend/pages/weather_screen.dart'; // Import WeatherScreen
 import 'package:safetravelfrontend/pages/destination_plan.dart'; // Import DestinationPlanning
 import 'package:safetravelfrontend/pages/top_appbar.dart'; // Import TopAppBar widget
@@ -118,6 +119,17 @@ class _DestinationsListState extends State<DestinationsList> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => WeatherScreen(destination: destination.name),
+                              ),
+                            );
+                          },
+                        ),
+                                                IconButton(
+                          icon: Image.asset('assets/images/bot.png'), // Weather icon
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TextInputPage(),
                               ),
                             );
                           },

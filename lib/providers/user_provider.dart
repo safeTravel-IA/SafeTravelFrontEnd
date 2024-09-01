@@ -35,6 +35,8 @@ List<Map<String, dynamic>> get hospitals => _hospitals;
 
       String get statusMessage => _statusMessage;
 
+  List<Map<String, dynamic>> likes = [];
+List<String> comments = [];
 
     // State variables
   String? _conversionError;
@@ -290,8 +292,8 @@ Future<void> fetchImages(String query) async {
 }
 Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) async {
   // Reset state before making the request
-  _weatherAlerts = null;
-  _pollutionAlerts = null;
+  _weatherAlerts = [];
+  _pollutionAlerts = [];
   _error = null;
   notifyListeners();
 
@@ -302,11 +304,11 @@ Future<void> fetchWeatherAlerts(String destination, [double? lat, double? lon]) 
     _error = result['error'];
   } else {
     // Handle the response data
-    final data = result['data'];
+    final data = result;
 
-    if (data != null && data.containsKey('message')) {
-      _weatherAlerts = List<String>.from(data['weatherAlerts']); // Extract weather alerts
-      _pollutionAlerts = List<String>.from(data['pollutionAlerts']); // Extract pollution alerts
+    if (data != null) {
+      _weatherAlerts = List<String>.from(data['weatherAlerts'] ?? []);
+      _pollutionAlerts = List<String>.from(data['pollutionAlerts'] ?? []);
     } else {
       _weatherAlerts = [];
       _pollutionAlerts = [];
@@ -791,6 +793,64 @@ Future<void> fetchMessagesByUserId(String userId) async {
 
     notifyListeners();
   }
+Future<Map<String, dynamic>> toggleLike({
+  required String postId,
+  required String userId,
+  required bool isLiked, // Include the current like status
+}) async {
+  // Call the UserApiService.toggleLike with the updated parameters
+  final Map<String, dynamic> result = await UserApiService.toggleLike(
+    postId: postId,
+    userId: userId,
+    isLiked: isLiked, // Pass the current like status
+  );
+
+  if (result.containsKey('data')) {
+    // Successfully toggled like
+    notifyListeners(); // Notify listeners about the state change
+    return result;  // Return the response map
+  } else {
+    // Handle error
+    print('Error toggling like: ${result['error']}');
+    return result;  // Return the response map with error information
+  }
+}
+
+
+  Future<void> showAllLikes({required String postId}) async {
+    final result = await UserApiService.showAllLikes(postId: postId);
+    if (result.containsKey('data')) {
+      // Handle success, e.g., update the UI or state
+      likes = List<Map<String, dynamic>>.from(result['data']);
+      notifyListeners();
+    } else {
+      // Handle error
+      print('Error fetching likes: ${result['error']}');
+    }
+  }
+
+  Future<void> addComment({required String postId, required String userId, required String content}) async {
+    final result = await UserApiService.addComment(postId: postId, userId: userId, content: content);
+    if (result.containsKey('data')) {
+      // Handle success, e.g., update the UI or state
+      notifyListeners();
+    } else {
+      // Handle error
+      print('Error adding comment: ${result['error']}');
+    }
+  }
+Future<void> listComments({required String postId}) async {
+  final result = await UserApiService.listComments(postId: postId);
+  if (result.containsKey('data')) {
+    // Handle success, e.g., update the UI or state
+    comments = List<String>.from(result['data']);
+    notifyListeners();
+  } else {
+    // Handle error
+    print('Error fetching comments: ${result['error']}');
+  }
+}
+
 }
 
 

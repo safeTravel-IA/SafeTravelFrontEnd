@@ -155,7 +155,7 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
         // Convert locationData to a Map<String, dynamic>
         final locationData = {
           'coordinates': [latitude, longitude], // Send as list of numbers
-          'message': 'Hey, I am here!',
+          '': '',
         };
 
         await userProvider.shareLocationWithFriends(
@@ -179,52 +179,54 @@ class _ShareLocationScreenState extends State<ShareLocationScreen> {
   }
 
   Future<void> _showMessagesDialog() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId ?? '';
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  final userId = userProvider.userId ?? '';
 
-    if (userId.isNotEmpty) {
-      await userProvider.fetchMessagesByUserId(userId);
+  if (userId.isNotEmpty) {
+    await userProvider.fetchMessagesByUserId(userId);
 
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Messages'),
-            content: userProvider.isLoading
-                ? Center(child: CircularProgressIndicator())
-                : userProvider.errorMessage != null
-                    ? Text('Error: ${userProvider.errorMessage}')
-                    : Container(
-                        width: double.maxFinite, // Ensures the ListView uses available width
-                        child: ListView.builder(
-                          itemCount: userProvider.messages.length,
-                          itemBuilder: (context, index) {
-                            final message = userProvider.messages[index];
-                            return ListTile(
-                              title: Text(message['username'] ?? 'Unknown'),
-                              subtitle: Text(
-                                'Sent At: ${message['sentAt']}\nContent: ${message['content'] ?? 'No Content'}',
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              isThreeLine: true,
-                            );
-                          },
-                        ),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Messages'),
+          content: userProvider.isLoading
+              ? Center(child: CircularProgressIndicator())
+              : userProvider.errorMessage != null
+                  ? Text('Error: ${userProvider.errorMessage}')
+                  : Container(
+                      width: double.maxFinite, // Ensures the ListView uses available width
+                      child: ListView.builder(
+                        itemCount: userProvider.messages.length,
+                        itemBuilder: (context, index) {
+                          final message = userProvider.messages[index];
+                          return ListTile(
+                            title: Text(message['username'] ?? 'Unknown'),
+                            subtitle: Text(
+                              'Sent At: ${message['sentAt']}\nContent: ${message['content'] ?? 'No Content'}',
+                              style: TextStyle(fontFamily: 'monospace'), // Use monospace font for better readability
+                              maxLines: null, // Allow multiple lines to be displayed
+                              overflow: TextOverflow.visible, // Display all lines
+                            ),
+                            isThreeLine: true,
+                          );
+                        },
                       ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Close'),
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      print('User ID is null or empty');
-    }
+                    ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  } else {
+    print('User ID is null or empty');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import the Clipboard class
 import 'package:provider/provider.dart';
 import 'package:safetravelfrontend/providers/user_provider.dart';
 
@@ -19,6 +20,31 @@ class _WeatherScreenState extends State<WeatherScreen> {
     super.initState();
     _fetchWeatherFuture = Provider.of<UserProvider>(context, listen: false)
         .fetchWeatherNews(widget.destination, null, null);
+  }
+
+  // Method to format and copy weather data to the clipboard
+  void _copyWeatherToClipboard(UserProvider userProvider) {
+    final forecasts = userProvider.weatherNews?['forecast'] as List<dynamic>?;
+
+    if (forecasts == null || forecasts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No weather data available to copy.')),
+      );
+      return;
+    }
+
+    // Format weather data as a string
+    final weatherString = forecasts.map((forecast) {
+      final avgTempC = double.tryParse(forecast['avgTempC']) ?? 0.0;
+      final day = forecast['time'];
+      return 'Day: $day, Temperature: ${avgTempC}°C';
+    }).join('\n');
+
+    // Copy to clipboard
+    Clipboard.setData(ClipboardData(text: weatherString));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Weather data copied to clipboard.')),
+    );
   }
 
   @override
@@ -51,6 +77,14 @@ class _WeatherScreenState extends State<WeatherScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final userProvider =
+                          Provider.of<UserProvider>(context, listen: false);
+                      _copyWeatherToClipboard(userProvider);
+                    },
+                    child: Text('Copy to Clipboard'),
                   ),
                 ],
               ),
@@ -101,7 +135,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
                           ...forecasts.map((forecast) {
                             final avgTempC =
                                 double.tryParse(forecast['avgTempC']) ?? 0.0;
-                            // Select the image based on avgTempC value
                             String imagePath;
                             if (avgTempC <= 0) {
                               imagePath = 'assets/images/clouds5.png'; // Snow
